@@ -92,6 +92,14 @@ class SymbolicState {
     this.coverage = new Coverage(sandbox);
     this.errors = [];
 
+    // Single-path symbolic-assert mode. Self-activating: stays false through
+    // every normal (S$.assert / branch-flipping) run, and is flipped true only
+    // by a call to assertSymbolic() below. While true, alternatives() emits no
+    // child inputs, so the Distributor runs this seed path exactly once -- the
+    // single-path validity comparison against dynajs concolic. Default ExpoSE
+    // behaviour is untouched.
+    this._symbolicAssertMode = false;
+
     this._unaryJumpTable = BuildUnaryJumpTable(this);
     this._setupSmtFunctions();
   }
@@ -231,7 +239,48 @@ class SymbolicState {
     return this.pathCondition.slice(0, i).map((x) => x.ast);
   }
 
+  /**
+   * Single-path symbolic assertion (dynajs concolic comparison).
+   *
+   * Mirrors _buildPC: assert the current seed path's PC onto the solver, then
+   * check whether the assertion's negation is satisfiable. A model means there
+   * is an input consistent with this path that violates the assertion (a
+   * counterexample, recorded in errors); UNSAT means the assertion provably
+   * holds on this path. Does NOT throw and does NOT explore other paths -- it
+   * flips _symbolicAssertMode so alternatives() suppresses branch-flipping and
+   * the Distributor runs this seed path exactly once.
+   */
+  assertSymbolic(value, desc) {
+    this._symbolicAssertMode = true;
+
+    const neg = this.ctx.mkNot(this.asSymbolic(value));
+    this.slv.reset();
+    this.pathCondition.forEach((pc) => this.slv.assert(pc.ast));
+    const checks = this.pathCondition
+      .reduce((last, next) => last.concat(next.ast.checks), [])
+      .concat(neg.checks);
+
+    const solution = this._checkSat(neg, this.pathCondition.length, checks);
+    this.slv.reset();
+
+    if (solution) {
+      this.errors.push({
+        error: "Assertion violable" + (desc ? ": " + desc : ""),
+        counterexample: solution,
+      });
+    }
+
+    return solution; // undefined => UNSAT => assertion holds on this path
+  }
+
   alternatives(inputCallback) {
+    // Single-path mode: no branch-flipping, so the Distributor stops after the
+    // seed run. (Dead branch unless assertSymbolic() was called this run.)
+    if (this._symbolicAssertMode) {
+      inputCallback([]);
+      return;
+    }
+
     let childInputs = [];
 
     if (this.input._bound > this.pathCondition.length) {

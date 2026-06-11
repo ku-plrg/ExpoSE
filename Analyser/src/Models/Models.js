@@ -75,6 +75,12 @@ function BuildModels(state) {
   Object._expose.pureSymbol = function (name) {
     return state.createPureSymbol(name);
   };
+  // Single-path symbolic assertion (dynajs concolic comparison). Calling this
+  // self-activates single-run mode for the test; normal S$.assert tests never
+  // reach it, so default ExpoSE behaviour is unchanged.
+  Object._expose.assertSymbolic = function (value, desc) {
+    return state.assertSymbolic(value, desc);
+  };
 
   return model;
 }
