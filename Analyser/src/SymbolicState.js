@@ -249,6 +249,16 @@ class SymbolicState {
    * holds on this path. Does NOT throw and does NOT explore other paths -- it
    * flips _symbolicAssertMode so alternatives() suppresses branch-flipping and
    * the Distributor runs this seed path exactly once.
+   *
+   * Both outcomes are recorded (in errors, the only channel the worker writes
+   * back to the Distributor), one entry per call in execution order, so a run
+   * with several asserts -- including ones a branch skips this seed -- reports
+   * each that actually executed. The dynajs runner reads that ordered stream of
+   * "Assertion violable|holds: <desc>" lines, with `desc` set to the assert's
+   * ground truth, to score per assert. Recording holds here means the trailing
+   * "ExpoSE Finished. N errors" count no longer tracks violable asserts only
+   * (every assert-bearing path now counts); nothing downstream relies on it in
+   * this mode -- the verdict comes from the per-assert lines.
    */
   assertSymbolic(value, desc) {
     this._symbolicAssertMode = true;
@@ -263,11 +273,14 @@ class SymbolicState {
     const solution = this._checkSat(neg, this.pathCondition.length, checks);
     this.slv.reset();
 
+    const suffix = desc ? ": " + desc : "";
     if (solution) {
       this.errors.push({
-        error: "Assertion violable" + (desc ? ": " + desc : ""),
+        error: "Assertion violable" + suffix,
         counterexample: solution,
       });
+    } else {
+      this.errors.push({ error: "Assertion holds" + suffix });
     }
 
     return solution; // undefined => UNSAT => assertion holds on this path
