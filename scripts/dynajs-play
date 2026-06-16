@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# ExpoSE analyseScript backed by dynajs concolic (drop-in replacement for
+# scripts/play). The Distributor spawns this as `dynajs-play <target> <inputJSON>`
+# and reads EXPOSE_OUT_PATH / EXPOSE_COVERAGE_PATH, which Spawn.js puts in our
+# environment. We forward to the dynajs instrumenter + Concolic analysis;
+# ConcolicAnalysis.endExecution writes those two result files on exit.
+#
+# Select it with: EXPOSE_PLAY_SCRIPT=scripts/dynajs-play
+set -uo pipefail
+
+DYNAJS_HOME="${DYNAJS_HOME:-$HOME/dynajs}"
+TARGET="$1"
+INPUT="${2:-}"
+if [ -z "$INPUT" ]; then INPUT='{"_bound":0}'; fi
+
+# dynajs instruments only files under cwd or an --include root; ExpoSE targets
+# live outside the dynajs repo, so include the target's directory explicitly.
+TARGET_DIR="$(cd "$(dirname "$TARGET")" && pwd)"
+
+export DYNAJS_HOME
+export DYNAJS_OPTIONS="--analysis=$DYNAJS_HOME/analyses/dist/Concolic.mjs --partial --include $TARGET_DIR"
+
+# The input JSON is the last argv entry, the ExpoSE convention ConcolicAnalysis
+# reads via process.argv (mirrors Analyser.js).
+exec "$DYNAJS_HOME/dynajs" node "$TARGET" "$INPUT"
