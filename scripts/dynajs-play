@@ -17,8 +17,15 @@ if [ -z "$INPUT" ]; then INPUT='{"_bound":0}'; fi
 # live outside the dynajs repo, so include the target's directory explicitly.
 TARGET_DIR="$(cd "$(dirname "$TARGET")" && pwd)"
 
+# The corpus does `require("S$")`. Resolve it to dynajs's bridge (mapping
+# S$.symbol/assume/… onto the Concolic analysis) ahead of ExpoSE's own lib/S$ by
+# prepending its parent to NODE_PATH, and --include it so the bridge's
+# assume/assert branches are instrumented (visible as path conditions).
+SDOLLAR_HOME="$DYNAJS_HOME/analyses/concolic/expose"
+export NODE_PATH="$SDOLLAR_HOME${NODE_PATH:+:$NODE_PATH}"
+
 export DYNAJS_HOME
-export DYNAJS_OPTIONS="--analysis=$DYNAJS_HOME/analyses/dist/Concolic.mjs --partial --include $TARGET_DIR"
+export DYNAJS_OPTIONS="--analysis=$DYNAJS_HOME/analyses/dist/Concolic.mjs --partial --include $TARGET_DIR --include $SDOLLAR_HOME/S\$"
 
 # The input JSON is the last argv entry, the ExpoSE convention ConcolicAnalysis
 # reads via process.argv (mirrors Analyser.js).
