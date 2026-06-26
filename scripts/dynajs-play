@@ -9,9 +9,23 @@
 set -uo pipefail
 
 DYNAJS_HOME="${DYNAJS_HOME:-$HOME/dynajs}"
+
+# ExpoSE root (this script lives in ExpoSE/scripts/).
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
 TARGET="$1"
 INPUT="${2:-}"
 if [ -z "$INPUT" ]; then INPUT='{"_bound":0}'; fi
+
+# ExpoSE's Distributor passes AHG targets relative to Analyser/ -- scripts/play
+# runs `cd Analyser` first, so e.g. "../lib/Harness/src/harness.js" resolves to
+# ExpoSE/lib/... . dynajs-play does NOT cd there, so a relative target would
+# resolve against the Distributor's cwd (ExpoSE root) and miss. Resolve a
+# relative target against Analyser/ to an absolute path; absolute ones pass through.
+case "$TARGET" in
+  /*) ;;
+  *)  TARGET="$(cd "$ROOT/Analyser" && cd "$(dirname "$TARGET")" && pwd)/$(basename "$TARGET")" ;;
+esac
 
 # dynajs instruments only files under cwd or an --include root; ExpoSE targets
 # live outside the dynajs repo, so include the target's directory explicitly.
