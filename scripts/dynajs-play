@@ -39,7 +39,11 @@ SDOLLAR_HOME="$DYNAJS_HOME/analyses/concolic/expose"
 export NODE_PATH="$SDOLLAR_HOME${NODE_PATH:+:$NODE_PATH}"
 
 export DYNAJS_HOME
-export DYNAJS_OPTIONS="--analysis=$DYNAJS_HOME/analyses/dist/Concolic.mjs --partial --include $TARGET_DIR --include $SDOLLAR_HOME/S\$"
+# --pos persist writes the id->location table into each instrumented file so
+# D$.ids is populated regardless of CJS/ESM (memory mode no-ops the merge for
+# ESM); ConcolicAnalysis reads it to build the statement-coverage payload the
+# Distributor aggregates (without it Total Coverage prints NaN%).
+export DYNAJS_OPTIONS="--analysis=$DYNAJS_HOME/analyses/dist/Concolic.mjs --partial --pos persist --include $TARGET_DIR --include $SDOLLAR_HOME/S\$"
 
 # The input JSON is the last argv entry, the ExpoSE convention ConcolicAnalysis
 # reads via process.argv (mirrors Analyser.js).

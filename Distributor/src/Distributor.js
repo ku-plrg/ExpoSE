@@ -97,9 +97,10 @@ if (process.argv.length >= 3) {
         totalRealLines += d.loc.all.length;
         totalLinesFound += d.loc.found;
       });
-      Math.round((totalLinesFound / totalRealLines) * 10000) / 100;
+      const totalCoverage =
+        Math.round((totalLinesFound / totalRealLines) * 10000) / 100;
       console.log(`[+] Total Lines Of Code ${totalLines}`);
-      console.log(`[+] Total Coverage: ${totalLinesFound / totalRealLines}%`);
+      console.log(`[+] Total Coverage: ${totalCoverage}%`);
 
       if (Config.printDeltaCoverage) {
         CoverageMap(coverage.lines(), (line) => console.log(line));

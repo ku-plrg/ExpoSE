@@ -116,7 +116,10 @@ for (const a of args) {
     process.exit(1);
   }
   let left = a.slice(0, eq);
-  const files = a.slice(eq + 1).split(",").filter(Boolean);
+  const files = a
+    .slice(eq + 1)
+    .split(",")
+    .filter(Boolean);
   let col = "Coverage";
   const colon = left.indexOf(":");
   if (colon >= 0) {

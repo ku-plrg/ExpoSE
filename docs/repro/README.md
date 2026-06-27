@@ -92,25 +92,25 @@ vs relative increase), not the SPIN path-count statistics.
 `run.sh` already prints a coverage table after Table 1 (via `extract-coverage.js`). The
 coverage numbers come from `finalCoverage[]` in each JSON result:
 
-| Metric (extract-coverage.js) | Source in the JSON                                  |
-| ---------------------------- | --------------------------------------------------- |
+| Metric (extract-coverage.js) | Source in the JSON                                   |
+| ---------------------------- | ---------------------------------------------------- |
 | `Stmt%` (paper's "coverage") | Σ `loc.found` / Σ `loc.all.length` over target files |
-| `LOC` (lines loaded)         | Σ `loc.total` over target files                     |
-| `Decision%`                  | Σ(`trueTaken`+`falseTaken`) / Σ `totalOptions`      |
-| `Term%`                      | Σ `terms.found` / Σ `terms.total`                   |
+| `LOC` (lines loaded)         | Σ `loc.total` over target files                      |
+| `Decision%`                  | Σ(`trueTaken`+`falseTaken`) / Σ `totalOptions`       |
+| `Term%`                      | Σ `terms.found` / Σ `terms.total`                    |
 
 ⚠️ For `loc`, statement coverage is `found / all.length` (covered reachable lines over total
-*reachable* lines), **not** `found / total`. `loc.total` is the file's physical line count,
+_reachable_ lines), **not** `found / total`. `loc.total` is the file's physical line count,
 which is what the paper reports as LOC. (harness + S$ runtime excluded, same as Table 1.)
 
 ## §7.2 settings (the three libraries)
 
-| Knob                       | SPIN default | PLDI §7.2 | env var                   |
-| -------------------------- | ------------ | --------- | ------------------------- |
-| Concurrency                | core count   | **32**    | `CONCURRENT`              |
-| Per-package wall time      | `2h`         | **`1h`**  | `MAX_TIME` (6 runs, avg)  |
-| Refinement iteration limit | `40`         | **`20`**  | `EXPOSE_MAX_REFINEMENTS`  |
-| Harness                    | AHG          | AHG       | — (same generic harness)  |
+| Knob                       | SPIN default | PLDI §7.2 | env var                  |
+| -------------------------- | ------------ | --------- | ------------------------ |
+| Concurrency                | core count   | **32**    | `CONCURRENT`             |
+| Per-package wall time      | `2h`         | **`1h`**  | `MAX_TIME` (6 runs, avg) |
+| Refinement iteration limit | `40`         | **`20`**  | `EXPOSE_MAX_REFINEMENTS` |
+| Harness                    | AHG          | AHG       | — (same generic harness) |
 
 `EXPOSE_MAX_REFINEMENTS` isn't forwarded by `run.sh`'s command prefix, but it propagates:
 the Distributor copies the whole environment into each worker (`Distributor/bin/Spawn.js`),
@@ -154,7 +154,7 @@ form: `minimist=docs/repro/out/run1/minimist.json,docs/repro/out/run2/minimist.j
 ## Old vs New comparison (`+%` column)
 
 Table 6 compares the original ExpoSE [27] (Old) against the full regex model (New). True "Old"
-is a *separate, older codebase* — this tree is "New". To produce an Old/New table on this tree
+is a _separate, older codebase_ — this tree is "New". To produce an Old/New table on this tree
 you approximate the baseline by disabling regex features, then label the two configs with a
 `Column:` prefix:
 
