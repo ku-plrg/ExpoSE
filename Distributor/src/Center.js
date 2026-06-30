@@ -10,6 +10,7 @@ class Center {
   constructor(options) {
     this.cbs = [];
     this._cancelled = false;
+    this._finished = false;
     this.options = options;
   }
 
@@ -109,6 +110,11 @@ class Center {
   }
 
   _finishedTesting() {
+    // Fire the done callback exactly once. cancel() finishes eagerly, then the
+    // workers it kills each run _postTest -> _finishedTesting again; without this
+    // guard the report (and process.exitCode) would be emitted multiple times.
+    if (this._finished) return;
+    this._finished = true;
     this.cbs.forEach((cb) =>
       cb(this, this._done, this._errors, this._coverage, this._stats.final()),
     );
@@ -172,14 +178,27 @@ class Center {
     }
 
     if (finalOut) {
+      const allErrors = errors.concat(finalOut.errors);
       this._pushDone(
         test,
         finalOut.input,
         finalOut.pc,
         finalOut.alternatives,
         coverage,
-        errors.concat(finalOut.errors),
+        allErrors,
       );
+      // EXPOSE_STOP_ON_ERROR=<value>: halt the whole search at the first path
+      // whose uncaught throw CONTAINS <value> (e.g. "Reachable") — not on any
+      // error, so infrastructure failures ("Exit code non-zero", extraction
+      // errors) don't prematurely stop it. cancel() kills the running workers and
+      // finishes, so no further paths/alternatives are explored.
+      if (
+        this.options.stopOnError &&
+        allErrors.some((e) => String(e.error).includes(this.options.stopOnError))
+      ) {
+        this.cancel();
+        return;
+      }
       this._expandAlternatives(test.file, finalOut.alternatives, coverage);
       this._stats.merge(finalOut.stats);
     } else {

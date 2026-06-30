@@ -57,4 +57,5 @@ export default {
     false,
   ) /* Prints coverage information on the finished path */,
   analyseScript: getArgument("EXPOSE_PLAY_SCRIPT", "string", "./scripts/play"),
+  stopOnError: getArgument("EXPOSE_STOP_ON_ERROR", "string", undefined) /* halt the whole search at the first path whose uncaught throw contains this value (e.g. "Reachable"); unset = explore every alternative */,
 };
